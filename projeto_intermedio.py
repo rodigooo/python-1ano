@@ -68,9 +68,26 @@ locais = {
             "este": "floresta",
         },
         "inimigos": ["sapo"],
-        "items": ["escudo partido"],
+        "itens": ["escudo partido"],
     }
 }
 
-def explorar(local):
+def explorar(jogador):
+    local = locais[jogador["local"]]
+    print(f"\nDecidiste explorar o/a {local}")
+    aparece_inimigo = random.randint(0, 2)
+    if aparece_inimigo:
+        nome_inimigo = random.choice(inimigos[local["inimigos"]])
+        print(f"\nApareceu um/uma {nome_inimigo}")
+        combate(nome_inimigo)
+    else:
+        if local["items"]:
+            jogador["inventario"].append(local["items"])
+            print("\nConseguiste um/uma ", end="")
+            print(" e um/uma ".join(local["items"]))
+            del local["items"]
+        else:
+            print("\nNão encontraste nada!!")
+
+def combate(inimigo):
     pass
