@@ -79,7 +79,7 @@ def explorar(jogador):
     if aparece_inimigo:
         nome_inimigo = random.choice(inimigos[local["inimigos"]])
         print(f"\nApareceu um/uma {nome_inimigo}")
-        combate(nome_inimigo)
+        combate(nome_inimigo, jogador)
     else:
         if local["items"]:
             jogador["inventario"].append(local["items"])
@@ -89,5 +89,6 @@ def explorar(jogador):
         else:
             print("\nNão encontraste nada!!")
 
-def combate(inimigo):
-    pass
+def combate(inimigo, jogador):
+    print("Apareceu um inimigo!!!")
+    inimigo_vida = inimigo["hp"]
