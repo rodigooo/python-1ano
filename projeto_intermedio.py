@@ -1,7 +1,5 @@
 import math
 import random
-from operator import xor
-
 
 def criar_jogador(nome):
     return {
@@ -11,6 +9,7 @@ def criar_jogador(nome):
         "defesa": 10,
         "ouro": 20,
         "nivel": 1,
+        "exp": 0,
         "inventario": ["pocao", "anel"],
         "local": "casa",
     }
@@ -75,6 +74,21 @@ locais = {
     }
 }
 
+itens_a_venda = {
+    "espada": {
+        "preço": 50,
+        "efeito": [10 , "ataque"],
+    },
+    "feitiço de proteção": {
+        "preço": 25,
+        "efeito": [20, "defesa"],
+    },
+    "poção mágica": {
+        "preço": 35,
+        "efeito": [100 , "hp"]
+    }
+}
+
 def explorar(jogador):
     local = locais[jogador["local"]]
     print(f"\nDecidiste explorar o/a {local}")
@@ -89,6 +103,8 @@ def explorar(jogador):
                 print("\nConseguiste um/uma ", end="")
                 print(" e um/uma ".join(local["items"]))
                 del local["items"]
+            else:
+                print("\nNão encontraste nada!!")
         case 3:
             print("\nNão encontraste nada!!")
 
@@ -97,7 +113,8 @@ def combate(inimigo, jogador):
     inimigo_hp = inimigo["hp"]
     while True:
         if inimigo_hp == 0:
-            ## codigo de conseguir recompensa aqui
+            jogador["ouro"] += inimigo["gold_recompensa"]
+            jogador["exp"] += inimigo["xp_recompensa"]
             return
         print(f"A lutar com: {inimigo['nome']}")
         print("Opções: ")
@@ -142,6 +159,9 @@ def combate(inimigo, jogador):
                             continue
         print(f"Sofreste {dano_ao_jogador} dano!")
 
+def loja():
+    pass
 
 def perder():
+    print("Perdeste!!")
     quit()
