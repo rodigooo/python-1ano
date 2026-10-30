@@ -104,28 +104,31 @@ def combate(inimigo, jogador):
         print("1 - Atacar")
         print("2 - Defender")
         print("3 - Fugir")
+        dano_ao_inimigo = random.randint(
+            math.floor(jogador["ataque"] / 2),
+            jogador["ataque"] * 2
+        )
+        dano_ao_jogador = random.randint(
+            math.floor((inimigo["ataque"] - jogador["defesa"]) / 2),
+            (inimigo["ataque"] - jogador["defesa"]) * 2
+        )
         match input("Escolhe uma das opções: "):
             case "1":
-                dano_ao_inimigo = random.randint(
-                    math.floor(jogador["ataque"] / 2),
-                    jogador["ataque"] * 2
-                )
                 inimigo_hp -= dano_ao_inimigo
                 inimigo_hp = max(0, inimigo_hp)
                 if inimigo_hp == 0:
                     continue
-                dano_ao_jogador = random.randint(
-                    math.floor((inimigo["ataque"] - jogador["defesa"]) / 2),
-                    (inimigo["ataque"] - jogador["defesa"]) * 2
-                )
                 jogador["hp"] -= dano_ao_jogador
                 jogador["hp"] = max(0, jogador["hp"])
                 if jogador["hp"] == 0:
                     perder()
                 print(f"{inimigo['nome']} sofreu {dano_ao_inimigo} dano!\n")
-                print(f"Sofreste {dano_ao_jogador} dano!")
             case "2":
-                pass
+                dano_ao_jogador //= random.randint(1, 5)
+                jogador["hp"] -= dano_ao_jogador
+                jogador["hp"] = max(0, jogador["hp"])
+                if jogador["hp"] == 0:
+                    perder()
             case "3":
                 match random.randint(1, 2):
                     case 1:
@@ -133,14 +136,11 @@ def combate(inimigo, jogador):
                         return
                     case 2:
                         print("Não conseguiste fugir")
-                        dano_ao_inimigo = random.randint(
-                            math.floor(jogador["ataque"] / 2),
-                            jogador["ataque"] * 2
-                        )
-                        inimigo_hp -= dano_ao_inimigo
-                        inimigo_hp = max(0, inimigo_hp)
-                        if inimigo_hp == 0:
+                        jogador["hp"] -= dano_ao_jogador
+                        jogador["hp"] = max(0, inimigo_hp)
+                        if jogador["hp"] == 0:
                             continue
+        print(f"Sofreste {dano_ao_jogador} dano!")
 
 
 def perder():
