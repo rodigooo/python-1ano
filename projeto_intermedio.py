@@ -1,10 +1,13 @@
 import math
 import random
 import time
+import json
+from datetime import datetime
 
 def criar_jogador(nome: str):
     return {
         "nome": nome,
+        "max_hp": 100,
         "hp": 100,
         "ataque": 20,
         "defesa": 10,
@@ -14,6 +17,7 @@ def criar_jogador(nome: str):
         "exp_para_proximo_nivel": 100,
         "inventario": ["frasco de pocao", "anel"],
         "local": "casa",
+        "ultima_vez_jogado": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 def criar_inimigo(nome: str, hp: int, ataque: int, xp_recompensa: int, gold_recompensa: int):
@@ -91,11 +95,11 @@ itens_a_venda = {
     }
 }
 
-save_path = "savegame.txt"
+save_path = "savegame.json"
 
 def explorar(jogador):
     local = locais[jogador["local"]]
-    print(f"\nDecidiste explorar o/a {local['nome']}.")
+    print(f"\nDecidiste explorar o/a {local['nome']}, {local['descricao']}.")
     time.sleep(1)
     match random.randint(1, 3):
         case 1:
@@ -107,11 +111,10 @@ def explorar(jogador):
             combate(inimigos[nome_inimigo], jogador)
         case 2:
             if local["itens"]:
-                for item in local["itens"]:
-                    jogador["inventario"].append(item)
-                print("\nConseguiste um/uma ", end="")
-                print(" e um/uma ".join(local["itens"]), end="!\n")
-                local["itens"].clear()
+                item_encontrado = random.choice(local["itens"])
+                jogador["inventario"].append(item_encontrado)
+                print(f"\nEncontraste um/uma {item_encontrado}!")
+                local["itens"].remove(item_encontrado)
             else:
                 print("\nNão encontraste nada!!")
         case 3:
@@ -123,17 +126,20 @@ def combate(inimigo, jogador):
         if inimigo_hp == 0:
             jogador["ouro"] += inimigo["gold_recompensa"]
             jogador["exp"] += inimigo["xp_recompensa"]
-            if jogador["exp"] >= jogador["exp_para_proximo_nivel"]:
+            while jogador["exp"] >= jogador["exp_para_proximo_nivel"]:
                 jogador["nivel"] += 1
                 jogador["exp"] -= jogador["exp_para_proximo_nivel"]
                 jogador["exp_para_proximo_nivel"] = math.floor(jogador["exp_para_proximo_nivel"] * 1.5)
                 print(f"Subiste de nível! Agora és nível {jogador['nivel']}!")
-                jogador["hp"] += 20
+                jogador["max_hp"] += 20
                 jogador["ataque"] += 5
                 jogador["defesa"] += 5
             print(f"Derrotaste o/a {inimigo['nome']}! Recebeste {inimigo['gold_recompensa']} ouro e {inimigo['xp_recompensa']} de experiência!")
             return
-        print(f"A lutar com: {inimigo['nome']}")
+        print("==============================================================")
+        print(f"A lutar com: {inimigo['nome']}, HP: {inimigo_hp}")
+        print(f"Teu HP: {jogador['hp']}")
+        print("==============================================================")
         print("Opções: ")
         print("1 - Atacar")
         print("2 - Defender")
@@ -156,7 +162,8 @@ def combate(inimigo, jogador):
                 jogador["hp"] = max(0, jogador["hp"])
                 if jogador["hp"] == 0:
                     perder()
-                print(f"{inimigo['nome']} sofreu {dano_ao_inimigo} dano!\n")
+                print(f"{inimigo['nome']} sofreu {dano_ao_inimigo} dano!")
+                time.sleep(0.5)
             case "2":
                 dano_ao_jogador //= random.randint(1, 5)
                 jogador["hp"] -= dano_ao_jogador
@@ -175,6 +182,7 @@ def combate(inimigo, jogador):
                         if jogador["hp"] == 0:
                             perder()
         print(f"Sofreste {dano_ao_jogador} dano!")
+        time.sleep(0.5)
 
 def loja(itens, jogador):
     print("Bem-vindo à loja.")
@@ -196,7 +204,10 @@ def loja(itens, jogador):
         case item if item in itens:
             if jogador["ouro"] >= itens[item]["preço"]:
                 jogador["ouro"] -= itens[item]["preço"]
-                jogador[itens[item]["efeito"][1]] += jogador[itens[item]["efeito"][0]]
+                if itens[item]["efeito"][1] == "hp":
+                    jogador["hp"] += min(itens[item]["efeito"][0], jogador["max_hp"] - jogador["hp"])
+                else:
+                    jogador[itens[item]["efeito"][1]] += jogador[itens[item]["efeito"][0]]
                 print(f"Compraste {item}! Ganhaste +{itens[item]['efeito'][0]} de {itens[item]['efeito'][1]}.")
             else:
                 print("Não tens ouro suficiente para comprar este item.")
@@ -204,9 +215,10 @@ def loja(itens, jogador):
             print("Opção inválida.")
             
 def guardar_jogo(caminho, jogador):
+    jogador["ultima_vez_jogado"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         with open(caminho, "w") as f:
-            f.write(str(jogador))
+            json.dump(jogador, f)
         print("\nJogo guardado com sucesso!")
     except Exception as e:
         print(f"Erro ao guardar o jogo: {e}")
@@ -214,7 +226,21 @@ def guardar_jogo(caminho, jogador):
 def carregar_jogo(caminho):
     try:
         with open(caminho, "r") as f:
-            jogador = eval(f.read())
+            jogador = json.load(f)
+        print(f"Bem-vindo de volta, {jogador['nome']}!")
+        print("Queres continuar de onde paraste ou começar um novo jogo?")
+        print("1 - Continuar")
+        print("2 - Novo jogo")
+        match input("Escolhe uma das opções: "):
+            case "1":
+                print("Continuando o jogo...")
+                print(f"Última vez jogado: {jogador.get('ultima_vez_jogado', 'Desconhecido')}")
+            case "2":
+                nome = input("Qual é o teu nome? ")
+                jogador = criar_jogador(nome)
+            case _:
+                print("Opção inválida. Continuando o jogo...")
+                print(f"Última vez jogado: {jogador.get('ultima_vez_jogado', 'Desconhecido')}")
         print("Jogo carregado com sucesso!")
     except Exception:
         nome = input("Qual é o teu nome? ")
@@ -227,7 +253,8 @@ def jogo():
     time.sleep(1)
     while True:
         print("==============================================================")
-        print(f"{jogador['nome']}, HP: {jogador['hp']}, Ouro: {jogador['ouro']}, Nível: {jogador['nivel']}, EXP: {jogador['exp']}")
+        print(f"{jogador['nome']}, HP: {jogador['hp']}, Ouro: {jogador['ouro']}, Nível: {jogador['nivel']}, EXP: {jogador['exp']}, EXP para próximo nível: {jogador['exp_para_proximo_nivel']}")
+        print(f"Inventário: {', '.join(jogador['inventario'])}")
         print(f"Local: {jogador['local']}")
         print("==============================================================")
         print("Opções: ")
