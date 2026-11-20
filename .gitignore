@@ -1,2 +1,5 @@
 savegame.json
 .vscode
+src/python_1ano/__init__.py
+__pycache__
+.venv

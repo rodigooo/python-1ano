@@ -18,33 +18,35 @@ def criar_jogador(nome: str):
         "inventario": ["frasco de pocao", "anel"],
         "local": "casa",
         "ultima_vez_jogado": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "efeitos_ativos": [],
     }
 
-def criar_inimigo(nome: str, hp: int, ataque: int, xp_recompensa: int, gold_recompensa: int):
+def criar_inimigo(nome: str, hp: int, ataque: int, xp_recompensa: int, gold_recompensa: int, tipo_ataque: str = "normal"):
     return {
         "nome": nome,
         "hp": hp,
         "ataque": ataque,
         "xp_recompensa": xp_recompensa,
         "gold_recompensa": gold_recompensa,
+        "tipo_ataque": tipo_ataque,
     }
 
 inimigos = {
     "sapo": criar_inimigo("sapo", 30, 10, 55, 25),
-    "bruxa": criar_inimigo("bruxa", 20, 50, 70, 200),
-    "esqueleto": criar_inimigo("esqueleto", 100, 20, 100, 250),
+    "bruxa": criar_inimigo("bruxa", 20, 50, 70, 200, "veneno"),
+    "esqueleto": criar_inimigo("esqueleto", 100, 20, 100, 250, "fogo"),
 }
 
 locais = {
     "casa": {
-        "nome": "casa do herói",
+        "nome": "Casa",
         "descricao": "A tua casa!",
         "saidas": {"sul": "floresta"},
         "inimigos": [],
         "itens": ["espada de madeira"],
     },
     "floresta": {
-        "nome": "floresta",
+        "nome": "Floresta",
         "descricao": "Floresta sombria",
         "saidas" : {
             "norte": "casa",
@@ -58,7 +60,7 @@ locais = {
         "itens": ["galho", "pó mágico"],
     },
     "cidade": {
-        "nome": "cidade",
+        "nome": "Cidade",
         "descricao": "Grande cidade, aqui não entram inimigos!",
         "saidas": {
             "oeste": "floresta",
@@ -87,12 +89,20 @@ itens_a_venda = {
     },
     "feitiço de proteção": {
         "preço": 25,
-        "efeito": [20, "defesa"],
+        "efeito": [10, "defesa"],
     },
     "poção mágica": {
         "preço": 35,
         "efeito": [100 , "hp"]
-    }
+    },
+    "escudo": {
+        "preço": 40,
+        "efeito": [15, "defesa"]
+    },
+    "anel de força": {
+        "preço": 60,
+        "efeito": [20, "ataque"]
+    },
 }
 
 save_path = "savegame.json"
@@ -126,14 +136,7 @@ def combate(inimigo, jogador):
         if inimigo_hp == 0:
             jogador["ouro"] += inimigo["gold_recompensa"]
             jogador["exp"] += inimigo["xp_recompensa"]
-            while jogador["exp"] >= jogador["exp_para_proximo_nivel"]:
-                jogador["nivel"] += 1
-                jogador["exp"] -= jogador["exp_para_proximo_nivel"]
-                jogador["exp_para_proximo_nivel"] = math.floor(jogador["exp_para_proximo_nivel"] * 1.5)
-                print(f"Subiste de nível! Agora és nível {jogador['nivel']}!")
-                jogador["max_hp"] += 20
-                jogador["ataque"] += 5
-                jogador["defesa"] += 5
+            subir_nivel(jogador)
             print(f"Derrotaste o/a {inimigo['nome']}! Recebeste {inimigo['gold_recompensa']} ouro e {inimigo['xp_recompensa']} de experiência!")
             return
         print("==============================================================")
@@ -158,18 +161,12 @@ def combate(inimigo, jogador):
                 inimigo_hp = max(0, inimigo_hp)
                 if inimigo_hp == 0:
                     continue
-                jogador["hp"] -= dano_ao_jogador
-                jogador["hp"] = max(0, jogador["hp"])
-                if jogador["hp"] == 0:
-                    perder()
+                sofrer_dano(jogador, dano_ao_jogador)
                 print(f"{inimigo['nome']} sofreu {dano_ao_inimigo} dano!")
                 time.sleep(0.5)
             case "2":
                 dano_ao_jogador //= random.randint(1, 5)
-                jogador["hp"] -= dano_ao_jogador
-                jogador["hp"] = max(0, jogador["hp"])
-                if jogador["hp"] == 0:
-                    perder()
+                sofrer_dano(jogador, dano_ao_jogador)
             case "3":
                 match random.randint(1, 2):
                     case 1:
@@ -177,12 +174,26 @@ def combate(inimigo, jogador):
                         return
                     case 2:
                         print("Não conseguiste fugir")
-                        jogador["hp"] -= dano_ao_jogador
-                        jogador["hp"] = max(0, jogador["hp"])
-                        if jogador["hp"] == 0:
-                            perder()
+                        sofrer_dano(jogador, dano_ao_jogador)
+                        print(f"O inimigo atacou-te enquanto fugias e sofrestes {dano_ao_jogador} dano!")
         print(f"Sofreste {dano_ao_jogador} dano!")
         time.sleep(0.5)
+
+def sofrer_dano(jogador, dano_ao_jogador):
+    jogador["hp"] -= dano_ao_jogador
+    jogador["hp"] = max(0, jogador["hp"])
+    if jogador["hp"] == 0:
+        perder()
+
+def subir_nivel(jogador):
+    while jogador["exp"] >= jogador["exp_para_proximo_nivel"]:
+        jogador["nivel"] += 1
+        jogador["exp"] -= jogador["exp_para_proximo_nivel"]
+        jogador["exp_para_proximo_nivel"] = math.floor(jogador["exp_para_proximo_nivel"] * 1.5)
+        print(f"Subiste de nível! Agora és nível {jogador['nivel']}!")
+        jogador["max_hp"] += 20
+        jogador["ataque"] += 5
+        jogador["defesa"] += 5
 
 def loja(itens, jogador):
     print("Bem-vindo à loja.")
